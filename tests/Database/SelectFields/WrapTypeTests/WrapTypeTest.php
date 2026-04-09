@@ -3,12 +3,12 @@
 declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields\WrapTypeTests;
 
+use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Comment;
 use Rebing\GraphQL\Tests\Support\Models\Post;
 use Rebing\GraphQL\Tests\Support\Traits\SqlAssertionTrait;
-use Rebing\GraphQL\Tests\TestCaseDatabase;
 
-class WrapTypeTest extends TestCaseDatabase
+class WrapTypeTest extends SelectFieldsTestCase
 {
     use SqlAssertionTrait;
 

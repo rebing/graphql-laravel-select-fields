@@ -13,27 +13,23 @@ parameters:
         - tests/
     excludePaths:
         - tests/Support/database/
-        - tests/integration-otel/
     inferPrivatePropertyTypeFromConstructor: true
     checkUninitializedProperties: true
     checkModelProperties: true
     ignoreErrors:
         -
           identifier: missingType.generics
-        -
-          message: '/Call to an undefined method Illuminate\\Testing\\TestResponse::(content|getData|getStatusCode)\(\)/'
-          identifier: method.notFound
-        # tests/Unit/GraphQLTest.php and tests/Database/SelectFields/InterfaceTests
+        # graphql-php type hierarchy: getFields() exists on ObjectType but not
+        # on the union type returned by graphql-php's type accessors.
         -
           message: '/Call to an undefined method .+::getFields\(\)/'
           identifier: method.notFound
         -
           message: '/Call to an undefined method Mockery\\/'
           identifier: method.notFound
-        # Mass ignore the raw array property access used in many tests for now
+        # Mass ignore nullable model property access in tests
         # See also https://github.com/larastan/larastan/issues/611
         -
           path: tests/*
           message: '/Cannot access property \$[a-z]+ on Rebing\\GraphQL\\Tests\\Support\\Models\\[A-Za-z]+\|null./'
           identifier: property.nonObject
-

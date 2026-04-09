@@ -3,10 +3,10 @@
 declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields\AliasedRelationArgTests;
 
+use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Post;
 use Rebing\GraphQL\Tests\Support\Models\User;
 use Rebing\GraphQL\Tests\Support\Traits\SqlAssertionTrait;
-use Rebing\GraphQL\Tests\TestCaseDatabase;
 
 /**
  * Documents the current (incorrect) behaviour for
@@ -14,7 +14,7 @@ use Rebing\GraphQL\Tests\TestCaseDatabase;
  *
  * When the same relationship field is queried via GraphQL aliases with
  * different arguments, SelectFields should apply the correct arguments
- * for each alias independently. Currently it does not — QueryPlan
+ * for each alias independently. Currently it does not - QueryPlan
  * keys fields by name (not alias), so the last alias's args win and
  * a single eager load is shared across all aliases.
  *
@@ -22,7 +22,7 @@ use Rebing\GraphQL\Tests\TestCaseDatabase;
  * stays green. Once the bug is fixed, update the assertions to match
  * the correct expected output described in the inline comments.
  */
-class AliasedRelationArgTest extends TestCaseDatabase
+class AliasedRelationArgTest extends SelectFieldsTestCase
 {
     use SqlAssertionTrait;
 
