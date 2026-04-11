@@ -6,6 +6,7 @@ namespace Rebing\GraphQL\Tests\Database;
 use GraphQL\Utils\SchemaPrinter;
 use Illuminate\Support\Carbon;
 use Rebing\GraphQL\Support\Facades\GraphQL;
+use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Comment;
 use Rebing\GraphQL\Tests\Support\Models\Post;
 use Rebing\GraphQL\Tests\Support\Queries\PostNonNullCursorPaginationQuery;
@@ -28,9 +29,8 @@ use Rebing\GraphQL\Tests\Support\Types\PostType;
 use Rebing\GraphQL\Tests\Support\Types\PostWithModelAndAliasAndCustomResolverType;
 use Rebing\GraphQL\Tests\Support\Types\PostWithModelAndAliasType;
 use Rebing\GraphQL\Tests\Support\Types\PostWithModelType;
-use Rebing\GraphQL\Tests\TestCaseDatabase;
 
-class SelectFieldsTest extends TestCaseDatabase
+class SelectFieldsTest extends SelectFieldsTestCase
 {
     use SqlAssertionTrait;
 

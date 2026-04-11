@@ -1,7 +1,7 @@
 {
-    "name": "rebing/graphql-laravel",
-    "description": "Laravel wrapper for PHP GraphQL",
-    "keywords": ["framework", "laravel", "graphql", "react"],
+    "name": "rebing/graphql-laravel-select-fields",
+    "description": "SelectFields (Eloquent eager loading) for rebing/graphql-laravel - optimizes GraphQL queries by analysing requested fields to build minimal SELECT and eager-load only the needed relations.",
+    "keywords": ["graphql", "laravel", "eloquent", "select-fields", "eager-loading"],
     "authors": [
         {
             "name": "Rebing OÜ",
@@ -35,22 +35,13 @@
     "type": "library",
     "require": {
         "php": "^8.2",
-        "ext-json": "*",
-        "illuminate/contracts": "^12.0|^13.0",
-        "illuminate/support": "^12.0|^13.0",
-        "laragraph/utils": "^2.0.1",
-        "thecodingmachine/safe": "^3.0",
-        "webonyx/graphql-php": "^15.31.0"
+        "rebing/graphql-laravel": "dev-mfn/separate-select-fields"
     },
     "require-dev": {
-        "brianium/paratest": "^7.8.5|^8.0",
         "ext-pdo_sqlite": "*",
-        "eliashaeussler/deep-closure-comparator": "^1.2",
         "fakerphp/faker": "^1.24",
         "laravel/framework": "^12.0|^13.0",
         "mockery/mockery": "^1.6.10",
-        "open-telemetry/sdk": "^1.13",
-        "open-telemetry/sem-conv": "^1.38",
         "orchestra/testbench": "^10.0|^11.0",
         "phpunit/phpunit": "^11.5.3|^12.0.1|^13.0"
     },
@@ -71,23 +62,20 @@
         "cs-update": "composer update --working-dir=tools/cs-fixer",
         "cs-lint": "composer install --working-dir=tools/cs-fixer --quiet && tools/cs-fixer/vendor/bin/php-cs-fixer fix --diff --dry-run",
         "cs-fix": "composer install --working-dir=tools/cs-fixer --quiet && tools/cs-fixer/vendor/bin/php-cs-fixer fix --diff",
-        "tests": "LOG_DEPRECATIONS_CHANNEL=errorlog paratest",
-        "tests-coverage": "LOG_DEPRECATIONS_CHANNEL=errorlog paratest --coverage-clover=coverage.xml",
+        "tests": "LOG_DEPRECATIONS_CHANNEL=errorlog vendor/bin/phpunit",
+        "tests-coverage": "LOG_DEPRECATIONS_CHANNEL=errorlog vendor/bin/phpunit --coverage-clover=coverage.xml",
         "bc-update": "composer update --working-dir=tools/bc-check",
         "bc-check": "composer install --working-dir=tools/bc-check --quiet && tools/bc-check/vendor/bin/roave-backward-compatibility-check",
         "bc-baseline": "composer install --working-dir=tools/bc-check --quiet && php bin/update-bc-baseline.php --strip-baseline && tools/bc-check/vendor/bin/roave-backward-compatibility-check 2>&1 | php bin/update-bc-baseline.php"
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "10.x-dev"
+            "dev-master": "0.x-dev"
         },
         "laravel": {
             "providers": [
-                "Rebing\\GraphQL\\GraphQLServiceProvider"
-            ],
-            "aliases": {
-                "GraphQL": "Rebing\\GraphQL\\Support\\Facades\\GraphQL"
-            }
+                "Rebing\\GraphQL\\Support\\SelectFieldsServiceProvider"
+            ]
         }
     },
     "minimum-stability": "dev",
@@ -99,9 +87,5 @@
             "php-http/discovery": false,
             "tbachert/spi": false
         }
-    },
-    "suggest": {
-        "mll-lab/laravel-graphiql": "Easily integrate GraphiQL into your Laravel projects.",
-        "open-telemetry/api": "Required for the OpenTelemetryTracingDriver (^1.0)."
     }
 }
