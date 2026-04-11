@@ -35,33 +35,6 @@ For most users, **no code changes are required**:
   `GraphQL::simplePaginate()`, and `GraphQL::cursorPaginate()` all work as
   before.
 
-### Custom Pagination Types
-
-If you have a custom pagination class that implemented `WrapType`, install this
-package and it will be available again at the same namespace:
-
-```php
-use Rebing\GraphQL\Support\Contracts\WrapType;
-
-class MyPaginationType extends ObjectType implements WrapType
-{
-    // ... unchanged
-}
-```
-
-### Custom Wrap Types
-
-Same applies to any custom wrapper type used with `GraphQL::wrapType()`:
-
-```php
-use Rebing\GraphQL\Support\Contracts\WrapType;
-
-class MyWrapperType extends ObjectType implements WrapType
-{
-    // ... unchanged
-}
-```
-
 ### Removed Extension Points
 
 The following methods were removed from `Rebing\GraphQL\Support\Field` in
