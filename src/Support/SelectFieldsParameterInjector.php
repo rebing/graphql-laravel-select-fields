@@ -26,21 +26,24 @@ class SelectFieldsParameterInjector implements ResolverParameterInjector
     {
         if (Closure::class === $className) {
             return function () use ($arguments, $fieldsAndArguments, $field) {
-                return $this->createSelectFields($arguments, $fieldsAndArguments, $field);
+                return $this->createSelectFields(SelectFields::class, $arguments, $fieldsAndArguments, $field);
             };
         }
 
-        return $this->createSelectFields($arguments, $fieldsAndArguments, $field);
+        // $className is guaranteed to be a SelectFields subclass by supports().
+        // @phpstan-ignore-next-line argument.type
+        return $this->createSelectFields($className, $arguments, $fieldsAndArguments, $field);
     }
 
     /**
+     * @param class-string<SelectFields> $className
      * @param array<int,mixed> $arguments
      * @param array<string,mixed> $fieldsAndArguments
      */
-    protected function createSelectFields(array $arguments, array $fieldsAndArguments, Field $field): SelectFields
+    protected function createSelectFields(string $className, array $arguments, array $fieldsAndArguments, Field $field): SelectFields
     {
         $ctx = $arguments[2] ?? null;
 
-        return new SelectFields($field->type(), $arguments[1], $ctx, $fieldsAndArguments);
+        return new $className($field->type(), $arguments[1], $ctx, $fieldsAndArguments);
     }
 }

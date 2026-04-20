@@ -44,13 +44,33 @@ graphql-laravel v10:
 - `instanciateSelectFields()` - previously constructed the SelectFields
   instance.
 
-These are no longer needed. The package handles everything via the
-`ResolverParameterInjector` interface. If you previously overrode these methods
-to use a custom SelectFields subclass, you can now:
+These are no longer needed. If you previously overrode these methods to use a
+custom `SelectFields` subclass, simply:
 
 1. Extend `Rebing\GraphQL\Support\SelectFields` with your custom class.
-2. Create a custom `ResolverParameterInjector` that returns your subclass.
-3. Register it via `Field::registerParameterInjector()` in a service provider.
+2. Type-hint your subclass directly in your `resolve()` method:
+
+   ```php
+   use Rebing\GraphQL\Support\SelectFields;
+
+   class MyCustomSelectFields extends SelectFields
+   {
+       // ...
+   }
+
+   public function resolve($root, array $args, $ctx, ResolveInfo $info, MyCustomSelectFields $fields)
+   {
+       // $fields is an instance of MyCustomSelectFields
+   }
+   ```
+
+The default parameter injector will construct and inject your subclass
+automatically.
+
+For advanced cases (e.g. custom construction logic beyond the default
+constructor signature), you can still implement your own
+`ResolverParameterInjector` and register it via
+`Field::registerParameterInjector()` in a service provider.
 
 ### Generated Stubs
 

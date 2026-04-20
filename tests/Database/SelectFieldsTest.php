@@ -9,6 +9,7 @@ use Rebing\GraphQL\Support\Facades\GraphQL;
 use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Comment;
 use Rebing\GraphQL\Tests\Support\Models\Post;
+use Rebing\GraphQL\Tests\Support\Objects\CustomSelectFields;
 use Rebing\GraphQL\Tests\Support\Queries\PostNonNullCursorPaginationQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostNonNullPaginationQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostNonNullSimplePaginationQuery;
@@ -19,6 +20,7 @@ use Rebing\GraphQL\Tests\Support\Queries\PostQueryWithSelectFieldsClassInjection
 use Rebing\GraphQL\Tests\Support\Queries\PostsListOfWithSelectFieldsAndModelQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostsNonNullAndListAndNonNullOfWithSelectFieldsAndModelQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostsNonNullAndListOfWithSelectFieldsAndModelQuery;
+use Rebing\GraphQL\Tests\Support\Queries\PostWithCustomSelectFieldsSubclassQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostWithSelectFieldsAndModelAndAliasAndCustomResolverQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostWithSelectFieldsAndModelAndAliasCallbackQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostWithSelectFieldsAndModelAndAliasQuery;
@@ -54,6 +56,7 @@ class SelectFieldsTest extends SelectFieldsTestCase
                 PostWithSelectFieldsAndModelAndAliasCallbackQuery::class,
                 PostQueryWithSelectFieldsClassInjectionQuery::class,
                 PostQueryWithNonInjectableTypehintsQuery::class,
+                PostWithCustomSelectFieldsSubclassQuery::class,
             ],
         ]);
 
@@ -147,6 +150,34 @@ SQL,
 
         self::assertEquals(200, $response->getStatusCode());
         self::assertEquals($expectedResult, $response->json());
+    }
+
+    public function testSelectFieldsSubclassIsHonoured(): void
+    {
+        /** @var Post $post */
+        $post = Post::factory()->create([
+            'title' => 'Title of the post',
+        ]);
+
+        $graphql = <<<GRAQPHQL
+{
+  postWithCustomSelectFieldsSubclass(id: $post->id) {
+    id
+    title
+  }
+}
+GRAQPHQL;
+
+        $response = $this->call('POST', '/graphql', [
+            'query' => $graphql,
+        ]);
+
+        self::assertEquals(200, $response->getStatusCode());
+        self::assertInstanceOf(
+            CustomSelectFields::class,
+            PostWithCustomSelectFieldsSubclassQuery::$captured,
+            'SelectFieldsParameterInjector must honour subclass type-hints and instantiate the requested class.',
+        );
     }
 
     public function testWithSelectFieldsNonInjectableTypehints(): void
