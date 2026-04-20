@@ -35,6 +35,10 @@ For most users, **no code changes are required**:
   `GraphQL::simplePaginate()`, and `GraphQL::cursorPaginate()` all work as
   before.
 
+**Note for `SelectFields` subclasses:** The protected `validateField()` method
+was removed; its single call site in `handleFields()` was inlined as
+`($fieldObject->config['selectable'] ?? true) !== false`.
+
 ### Removed Extension Points
 
 The following methods were removed from `Rebing\GraphQL\Support\Field` in
