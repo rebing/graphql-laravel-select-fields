@@ -3,12 +3,12 @@
 declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields\DepthTests;
 
+use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Post;
 use Rebing\GraphQL\Tests\Support\Models\User;
 use Rebing\GraphQL\Tests\Support\Traits\SqlAssertionTrait;
-use Rebing\GraphQL\Tests\TestCaseDatabase;
 
-class DepthTest extends TestCaseDatabase
+class DepthTest extends SelectFieldsTestCase
 {
     use SqlAssertionTrait;
 

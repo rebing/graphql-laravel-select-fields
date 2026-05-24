@@ -3,10 +3,10 @@
 declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields\LazyTypeTests;
 
+use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Post;
 use Rebing\GraphQL\Tests\Support\Models\User;
 use Rebing\GraphQL\Tests\Support\Traits\SqlAssertionTrait;
-use Rebing\GraphQL\Tests\TestCaseDatabase;
 
 /**
  * Test that SelectFields works when field types are defined as callable thunks.
@@ -21,7 +21,7 @@ use Rebing\GraphQL\Tests\TestCaseDatabase;
  * `$fieldObject->getType()`, so it receives a Closure instead of a Type when
  * a lazy thunk is used, causing a crash.
  */
-class LazyTypeTest extends TestCaseDatabase
+class LazyTypeTest extends SelectFieldsTestCase
 {
     use SqlAssertionTrait;
 

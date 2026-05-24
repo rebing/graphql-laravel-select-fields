@@ -21,9 +21,6 @@
         failOnWarning="true"
 >
   <testsuites>
-    <testsuite name="Unit">
-      <directory suffix="Test.php">./tests/Unit</directory>
-    </testsuite>
     <testsuite name="Database">
       <directory suffix="Test.php">./tests/Database</directory>
     </testsuite>

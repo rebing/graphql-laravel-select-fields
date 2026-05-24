@@ -3,12 +3,12 @@
 declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields\PrimaryKeyTests;
 
+use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Comment;
 use Rebing\GraphQL\Tests\Support\Models\Post;
 use Rebing\GraphQL\Tests\Support\Traits\SqlAssertionTrait;
-use Rebing\GraphQL\Tests\TestCaseDatabase;
 
-class PaginationTest extends TestCaseDatabase
+class PaginationTest extends SelectFieldsTestCase
 {
     use SqlAssertionTrait;
 
@@ -74,13 +74,23 @@ GRAQPHQL;
 
         $result = $this->httpGraphql($query);
 
-        $this->assertSqlQueries(
-            <<<'SQL'
-select count(*) as aggregate from "posts";
-select "posts"."title", "posts"."id" from "posts" limit 1 offset 0;
-select "comments"."title", "comments"."post_id", "comments"."id" from "comments" where "comments"."post_id" in (?) order by "comments"."id" asc;
-SQL,
-        );
+        if (self::quotesAggregateAlias()) {
+            $this->assertSqlQueries(
+                <<<'SQL'
+                select count(*) as "aggregate" from "posts";
+                select "posts"."title", "posts"."id" from "posts" limit 1 offset 0;
+                select "comments"."title", "comments"."post_id", "comments"."id" from "comments" where "comments"."post_id" in (?) order by "comments"."id" asc;
+                SQL,
+            );
+        } else {
+            $this->assertSqlQueries(
+                <<<'SQL'
+                select count(*) as aggregate from "posts";
+                select "posts"."title", "posts"."id" from "posts" limit 1 offset 0;
+                select "comments"."title", "comments"."post_id", "comments"."id" from "comments" where "comments"."post_id" in (?) order by "comments"."id" asc;
+                SQL,
+            );
+        }
 
         $expectedResult = [
             'data' => [
@@ -133,12 +143,21 @@ GRAQPHQL;
 
         $result = $this->httpGraphql($query);
 
-        $this->assertSqlQueries(
-            <<<'SQL'
-            select count(*) as aggregate from "posts";
-            select "id" from "posts" limit 1 offset 0;
-            SQL,
-        );
+        if (self::quotesAggregateAlias()) {
+            $this->assertSqlQueries(
+                <<<'SQL'
+                select count(*) as "aggregate" from "posts";
+                select "id" from "posts" limit 1 offset 0;
+                SQL,
+            );
+        } else {
+            $this->assertSqlQueries(
+                <<<'SQL'
+                select count(*) as aggregate from "posts";
+                select "id" from "posts" limit 1 offset 0;
+                SQL,
+            );
+        }
 
         $expectedResult = [
             'data' => [

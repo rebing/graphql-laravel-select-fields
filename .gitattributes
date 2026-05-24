@@ -6,7 +6,6 @@
 /.github export-ignore
 /.php-cs-fixer.dist.php export-ignore
 /bin export-ignore
-/example export-ignore
 /phpstan-baseline.neon export-ignore
 /phpstan.neon.dist export-ignore
 /phpunit.xml.dist export-ignore
@@ -15,7 +14,3 @@
 /AGENTS.md export-ignore
 /CONTRIBUTING.md export-ignore
 /tmp export-ignore
-
-# Github specific: force syntax highlighting to be PHP for stubs
-# See https://github.com/github/linguist/blob/master/docs/overrides.md
-*.stub linguist-language=PHP

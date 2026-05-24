@@ -1,4 +1,4 @@
-# Contributing to graphql-laravel
+# Contributing to graphql-laravel-select-fields
 
 Contributions are welcome and appreciated. This guide covers the development
 workflow and what we expect from pull requests.
@@ -7,19 +7,19 @@ workflow and what we expect from pull requests.
 
 You can find help and discussion in the following places:
 
-- Support questions: [GitHub Discussions](https://github.com/rebing/graphql-laravel/discussions)
-- Bug reports: <https://github.com/rebing/graphql-laravel/issues>
+- Support questions: [GitHub Discussions](https://github.com/rebing/graphql-laravel-select-fields/discussions)
+- Bug reports: <https://github.com/rebing/graphql-laravel-select-fields/issues>
 
 Blank issues are disabled. Please use the issue templates.
 
 ## Reporting Bugs
 
-Report bugs using the [Bug Report](https://github.com/rebing/graphql-laravel/issues/new?template=1_Bug_report.md) issue template. Include your
-graphql-laravel, Laravel, and PHP versions, plus steps to reproduce.
+Report bugs using the [Bug Report](https://github.com/rebing/graphql-laravel-select-fields/issues/new?template=1_Bug_report.md) issue template. Include your
+graphql-laravel-select-fields, graphql-laravel, Laravel, and PHP versions, plus steps to reproduce.
 
 ## Requesting Features
 
-Request features using the [Feature Request](https://github.com/rebing/graphql-laravel/issues/new?template=2_Feature_request.md) issue template. If
+Request features using the [Feature Request](https://github.com/rebing/graphql-laravel-select-fields/issues/new?template=2_Feature_request.md) issue template. If
 you're willing to work on the feature yourself, mention it in the issue so we
 can discuss the approach before you invest time.
 
@@ -48,7 +48,7 @@ When working on your change, please keep the following in mind:
   `Removed`). Use this format:
 
   ```markdown
-  - Description of the change [\#123 / your-github-username](https://github.com/rebing/graphql-laravel/pull/123)
+  - Description of the change [\#123 / your-github-username](https://github.com/rebing/graphql-laravel-select-fields/pull/123)
   ```
 
 - **Update `.gitattributes`** if you add new files or directories that are only
@@ -56,7 +56,7 @@ When working on your change, please keep the following in mind:
   them with `export-ignore` so they are excluded from Composer distribution
   archives.
 - **Fix code style** before submitting. _Hint: run `composer cs-fix`._
-- **CI must pass.** All three workflows (tests, analysis, integration) must be
+- **CI must pass.** Both workflows (tests, analysis) must be
   green before a PR can be merged.
 
 ## Developing
@@ -67,7 +67,7 @@ with the `pdo_sqlite` extension, and [Composer](https://getcomposer.org).
 After cloning this repository locally, execute the following commands:
 
 ```bash
-cd /path/to/graphql-laravel
+cd /path/to/graphql-laravel-select-fields
 composer install
 ```
 
@@ -80,7 +80,7 @@ or update them explicitly with `composer <tool>-update`.
 
 | Command | What it does |
 |---------|--------------|
-| `composer tests` | Run the full test suite via paratest (parallel) |
+| `composer tests` | Run the full test suite via PHPUnit |
 | `composer cs-fix` | Auto-fix code style (php-cs-fixer) |
 | `composer cs-lint` | Check code style without modifying files |
 | `composer phpstan` | Run static analysis (level 8) |
@@ -186,23 +186,18 @@ comparison base. Run `composer bc-baseline` to clean up stale entries.
 
 When upgrading the minimum supported Laravel version:
 
-1. Update `illuminate/contracts` and `illuminate/support` constraints in the
-   root `composer.json`.
-2. Update `illuminate/contracts` in `tools/phpstan/composer.json` to match --
+1. Update `illuminate/contracts` in `tools/phpstan/composer.json` to match --
    this ensures larastan resolves against the same Laravel major version as the
    project.
-3. Update the `laravel/framework` constraint in root `require-dev`.
-4. Update the Laravel version matrix in CI workflows:
+2. Update the `laravel/framework` constraint in root `require-dev`.
+3. Update the Laravel version matrix in CI workflows:
    - `.github/workflows/tests.yml` (`matrix.laravel`)
-   - `.github/workflows/integration_tests.yml` (`matrix.laravel`)
 
 ### CI
 
-Three GitHub Actions workflows run on every PR:
+Two GitHub Actions workflows run on every PR:
 
 1. **Tests** (`tests.yml`) -- PHPUnit across PHP 8.2--8.5, Laravel 12--13,
    with both `prefer-lowest` and `prefer-stable` dependency resolution.
 2. **Analysis** (`analysis.yml`) -- PHPStan static analysis, code style lint,
    `composer audit` (security), and backward compatibility check.
-3. **Integration tests** (`integration_tests.yml`) -- Runs against a real
-    Laravel application and verifies OpenTelemetry integration.

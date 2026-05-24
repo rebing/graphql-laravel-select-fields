@@ -4,12 +4,12 @@ declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields\ComputedPropertiesTests;
 
 use Illuminate\Support\Carbon;
+use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Post;
 use Rebing\GraphQL\Tests\Support\Models\User;
 use Rebing\GraphQL\Tests\Support\Traits\SqlAssertionTrait;
-use Rebing\GraphQL\Tests\TestCaseDatabase;
 
-class ComputedPropertiesTest extends TestCaseDatabase
+class ComputedPropertiesTest extends SelectFieldsTestCase
 {
     use SqlAssertionTrait;
 

@@ -3,10 +3,10 @@
 declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields\ArrayTests;
 
+use Rebing\GraphQL\Tests\Database\SelectFields\SelectFieldsTestCase;
 use Rebing\GraphQL\Tests\Support\Models\Post;
-use Rebing\GraphQL\Tests\TestCaseDatabase;
 
-class ArrayTest extends TestCaseDatabase
+class ArrayTest extends SelectFieldsTestCase
 {
     protected function getEnvironmentSetUp($app): void
     {
