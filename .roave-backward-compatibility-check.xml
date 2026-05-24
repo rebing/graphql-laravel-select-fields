@@ -1,4 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<roave-bc-check xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Roave/BackwardCompatibilityCheck/8.21.x/Resources/schema.xsd">
-  <baseline/>
-</roave-bc-check>
+<roave-bc-check xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Roave/BackwardCompatibilityCheck/8.21.x/Resources/schema.xsd"/>
