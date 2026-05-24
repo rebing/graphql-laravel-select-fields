@@ -3,6 +3,7 @@
 declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields;
 
+use Illuminate\Foundation\Application;
 use Rebing\GraphQL\Support\Field;
 use Rebing\GraphQL\Support\SelectFields\CursorPaginationType;
 use Rebing\GraphQL\Support\SelectFields\PaginationType;
@@ -42,5 +43,17 @@ abstract class SelectFieldsTestCase extends TestCaseDatabase
         Field::clearParameterInjectors();
 
         parent::tearDown();
+    }
+
+    /**
+     * Whether the running Laravel framework version emits a quoted
+     * `as "aggregate"` alias in `paginate()` count queries.
+     *
+     * Introduced in Laravel 13.10.0 by laravel/framework#60140
+     * ("Delimit aggregate alias"). Older versions emit `as aggregate`.
+     */
+    protected static function quotesAggregateAlias(): bool
+    {
+        return version_compare(Application::VERSION, '13.10.0', '>=');
     }
 }
