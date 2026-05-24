@@ -35,7 +35,7 @@
     "type": "library",
     "require": {
         "php": "^8.2",
-        "rebing/graphql-laravel": "dev-mfn/separate-select-fields"
+        "rebing/graphql-laravel": "^10.0.0-RC4"
     },
     "require-dev": {
         "ext-pdo_sqlite": "*",
