@@ -29,7 +29,7 @@ class CustomWrapperType extends ObjectType implements WrapType
             $config['model'] = $underlyingType->config['model'];
         }
 
-        parent::__construct($config);
+        parent::__construct($config); // @phpstan-ignore argument.type ('model' is a Rebing extension to webonyx's ObjectType config)
     }
 
     /**
