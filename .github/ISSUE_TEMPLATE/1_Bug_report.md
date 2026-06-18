@@ -6,8 +6,9 @@ labels: bug
 ---
 
 ### Versions:
+- graphql-laravel-select-fields Version: #.#.#
 - graphql-laravel Version: #.#.#
-- Laravel Version: #.#.# <!-- Lumen is NOT supported! -->
+- Laravel Version: #.#.#
 - PHP Version: #.#.#
 
 ### Description:
