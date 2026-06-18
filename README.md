@@ -17,7 +17,7 @@ This is an optional companion package for
 
 - PHP ^8.2
 - Laravel 12+
-- rebing/graphql-laravel 10.0.0-RC4+
+- rebing/graphql-laravel 10.0.0+
 
 ## Installation
 

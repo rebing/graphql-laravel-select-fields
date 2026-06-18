@@ -36,7 +36,7 @@
     "require": {
         "php": "^8.2",
         "illuminate/contracts": "^12.0|^13.0",
-        "rebing/graphql-laravel": "^10.0.0-RC4"
+        "rebing/graphql-laravel": "^10.0.0"
     },
     "require-dev": {
         "ext-pdo_sqlite": "*",
