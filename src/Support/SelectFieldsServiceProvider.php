@@ -12,13 +12,10 @@ use Rebing\GraphQL\Support\SelectFields\SimplePaginationType;
 
 class SelectFieldsServiceProvider extends ServiceProvider
 {
-    public function register(): void
-    {
-        $this->app->scoped(Deferred\DeferredVariantsRegistry::class);
-    }
-
     public function boot(): void
     {
+        $this->app->scoped(Deferred\DeferredVariantsRegistry::class);
+
         // Register the parameter injector so that Closure and SelectFields
         // type-hints in resolver methods are resolved to SelectFields instances.
         Field::registerParameterInjector(new SelectFieldsParameterInjector);
