@@ -255,8 +255,16 @@ class SelectFields
                         static::addAlwaysFields($fieldObject, $field, $parentTable, true);
 
                         $argsVariants = $field['argsVariants'] ?? null;
+                        // The feature is active only when the flag is on AND
+                        // the registry was armed by the execution middleware
+                        // (spec §2.2, armed handshake). The enabled() check
+                        // is kept explicit for clarity — arming implies it —
+                        // and doubles as the cheap short-circuit before the
+                        // container lookup.
+                        $variantsFeatureOn = Deferred\DeferredVariantsConfig::enabled() &&
+                            app(Deferred\DeferredVariantsRegistry::class)->isArmed();
                         $variantsActive = \is_array($argsVariants) &&
-                            Deferred\DeferredVariantsConfig::enabled() &&
+                            $variantsFeatureOn &&
                             // Privacy-carrying fields are unsupported by
                             // CONTRACT (spec: privacy contract) regardless of
                             // the custom-resolver silence below.
@@ -273,7 +281,11 @@ class SelectFields
                             (isset($fieldObject->config['privacy']) ||
                                 !Deferred\DeferredVariantsRegistrar::hasCustomResolver($fieldObject->config));
 
-                        if ($variantsActive && Deferred\DeferredVariantsRegistrar::isSupported($fieldObject->config, $relation, $newParentType)) {
+                        $unsupportedReason = $variantsActive
+                            ? Deferred\DeferredVariantsRegistrar::unsupportedReason($fieldObject->config, $relation, $newParentType)
+                            : null;
+
+                        if ($variantsActive && null === $unsupportedReason) {
                             // Spec §2.2: divert to per-variant deferred
                             // loading — no $with entry; parent FK columns
                             // were already added by handleRelation() above,
@@ -322,7 +334,28 @@ class SelectFields
                                 // take the legacy merged path (bit-for-bit
                                 // today's behavior). A registry miss is never
                                 // a fallback path.
-                                Deferred\DeferredVariantsRegistrar::warnUnsupported(self::getTypeNameForDiagnostics($parentType), $key, $field);
+                                Deferred\DeferredVariantsRegistrar::warnUnsupported(self::getTypeNameForDiagnostics($parentType), $key, $field, $unsupportedReason);
+                            }
+
+                            if ($variantsFeatureOn) {
+                                // Spec §2.2, cross-position safety: EVERY
+                                // legacy relation position is observed — if
+                                // its (type, field, args) coincides with a
+                                // variant registered by ANOTHER position,
+                                // the resolver will intercept it, and the
+                                // shared spec must carry the UNION
+                                // sub-selection (this position's legacy
+                                // eager load may then run redundantly;
+                                // correctness over economy). $field was
+                                // already mutated by handleRelation()/
+                                // addAlwaysFields() above, matching the
+                                // pre-mutated shape of registered specs.
+                                app(Deferred\DeferredVariantsRegistry::class)->observe(
+                                    self::getTypeNameForDiagnostics($parentType),
+                                    $key,
+                                    \is_array($field['args'] ?? null) ? $field['args'] : [],
+                                    $field['fields'],
+                                );
                             }
 
                             $with[$relationsKey] = static::getSelectableFieldsAndRelations(

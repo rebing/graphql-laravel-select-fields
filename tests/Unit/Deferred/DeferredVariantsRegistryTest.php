@@ -180,6 +180,65 @@ class DeferredVariantsRegistryTest extends TestCase
         self::assertTrue($registry->isEmpty());
     }
 
+    public function testObserveIsIgnoredWhenNotArmed(): void
+    {
+        $registry = new DeferredVariantsRegistry;
+        $registry->observe('Post', 'comments', ['top' => 3], ['body' => ['args' => [], 'fields' => []]]);
+        $registry->register($this->makeSpec(['top' => 3], ['id' => ['args' => [], 'fields' => []]]));
+
+        $spec = $registry->match('Post', 'comments', ['top' => 3]);
+        self::assertNotNull($spec);
+        self::assertArrayNotHasKey('body', $spec->fields());
+    }
+
+    public function testObservationStoredBeforeSpecsIsBackMergedAtRegisterTime(): void
+    {
+        $registry = new DeferredVariantsRegistry;
+        $registry->arm();
+        // No specs exist yet: stored raw, hash-free (10.0-safety).
+        $registry->observe('Post', 'comments', ['top' => 3], ['body' => ['args' => [], 'fields' => []]]);
+        $registry->observe('Post', 'comments', ['top' => 99], ['other' => ['args' => [], 'fields' => []]]);
+
+        $registry->register($this->makeSpec(['top' => 3], ['id' => ['args' => [], 'fields' => []]]));
+
+        $spec = $registry->match('Post', 'comments', ['top' => 3]);
+        self::assertNotNull($spec);
+        self::assertArrayHasKey('id', $spec->fields());
+        self::assertArrayHasKey('body', $spec->fields());
+        // The non-matching observation was not merged anywhere:
+        self::assertArrayNotHasKey('other', $spec->fields());
+    }
+
+    public function testObserveMergesImmediatelyIntoAnExistingSpec(): void
+    {
+        $registry = new DeferredVariantsRegistry;
+        $registry->arm();
+        $registry->register($this->makeSpec(['top' => 3], ['id' => ['args' => [], 'fields' => []]]));
+
+        $registry->observe('Post', 'comments', ['top' => 3], ['body' => ['args' => [], 'fields' => []]]);
+
+        $spec = $registry->match('Post', 'comments', ['top' => 3]);
+        self::assertNotNull($spec);
+        self::assertArrayHasKey('id', $spec->fields());
+        self::assertArrayHasKey('body', $spec->fields());
+    }
+
+    public function testObservationsNeverCountAsUnconsumedAndFlushDisarms(): void
+    {
+        config(['graphql.select_fields.strict' => true]);
+        Log::shouldReceive('warning')->never();
+
+        $registry = new DeferredVariantsRegistry;
+        $registry->arm();
+        self::assertTrue($registry->isArmed());
+        $registry->observe('Post', 'comments', ['top' => 3], ['id' => ['args' => [], 'fields' => []]]);
+
+        $registry->flush(true);
+
+        self::assertFalse($registry->isArmed());
+        self::assertTrue($registry->isEmpty());
+    }
+
     public function testLoaderForMemoizesPerSpec(): void
     {
         $registry = new DeferredVariantsRegistry;

@@ -41,7 +41,30 @@ class DeferredVariantsMiddleware extends AbstractExecutionMiddleware
                     $this->registry,
                 ),
             );
+        } elseif ($current->registry() !== $this->registry) {
+            // Decorator identity (spec §2.2): long-lived non-Octane runtimes
+            // (e.g. queue workers) flush scoped bindings but keep config —
+            // the persisted decorator then holds a stale registry and every
+            // match would miss, degrading to unconstrained lazy loads.
+            // Re-wrap the ORIGINAL inner resolver (never a decorator inside
+            // a decorator) around the current scoped registry.
+            $inner = $current->inner();
+
+            while ($inner instanceof VariantAwareRelationResolver) {
+                $inner = $inner->inner();
+            }
+
+            $this->config->set(
+                'graphql.defaultFieldResolver',
+                new VariantAwareRelationResolver($inner, $this->registry),
+            );
         }
+
+        // Armed handshake (spec §2.2): handleFields diverts/observes only
+        // when armed, so executions bypassing this middleware (per-schema
+        // execution_middleware lists configured after provider boot) keep
+        // pure legacy behavior. Cleared again in flush().
+        $this->registry->arm();
 
         try {
             $result = $next($schemaName, $schema, $params, $rootValue, $contextValue);

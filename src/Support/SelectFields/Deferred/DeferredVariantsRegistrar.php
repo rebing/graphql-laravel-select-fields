@@ -58,7 +58,8 @@ final class DeferredVariantsRegistrar
     /**
      * Unsupported (spec §2.1a → legacy fallback + WARNING): MorphTo
      * relations, paginated/wrapped relation targets, and privacy-carrying
-     * fields.
+     * fields. Returns NULL when supported, otherwise the specific reason
+     * (passed through to warnUnsupported()).
      *
      * - Wrap detection: the package's canonical WrapType marker PLUS, as
      *   belt-and-braces, graphql-laravel's base pagination classes (covers
@@ -72,14 +73,14 @@ final class DeferredVariantsRegistrar
      *
      * @param array<string,mixed> $fieldConfig
      */
-    public static function isSupported(array $fieldConfig, object $relation, GraphqlType $newParentType): bool
+    public static function unsupportedReason(array $fieldConfig, object $relation, GraphqlType $newParentType): ?string
     {
         if (isset($fieldConfig['privacy'])) {
-            return false;
+            return 'privacy-protected field (per-row denial outcomes are unobservable from select-fields)';
         }
 
         if ($relation instanceof \Illuminate\Database\Eloquent\Relations\MorphTo) {
-            return false;
+            return 'MorphTo relation';
         }
 
         $innermost = $newParentType instanceof \GraphQL\Type\Definition\WrappingType
@@ -96,22 +97,22 @@ final class DeferredVariantsRegistrar
             $innermost instanceof \Rebing\GraphQL\Support\SimplePaginationType ||
             $innermost instanceof \Rebing\GraphQL\Support\CursorPaginationType
         ) {
-            return false;
+            return 'paginated/wrapped relation target';
         }
 
-        return true;
+        return null;
     }
 
     /**
      * @param array<int|string,mixed> $field
      */
-    public static function warnUnsupported(string $parentTypeName, string $fieldName, array $field): void
+    public static function warnUnsupported(string $parentTypeName, string $fieldName, array $field, ?string $reason): void
     {
         \Illuminate\Support\Facades\Log::warning('SelectFields: argument variants on an unsupported relation — falling back to legacy merged eager load', [
             'parentType' => $parentTypeName,
             'field' => $fieldName,
             'args' => array_column($field['argsVariants'], 'args'),
-            'reason' => 'paginated/wrapped relation target, MorphTo relation, or privacy-protected field (per-row denial outcomes are unobservable from select-fields)',
+            'reason' => $reason ?? 'unknown',
         ]);
 
         if (DeferredVariantsConfig::strict()) {
