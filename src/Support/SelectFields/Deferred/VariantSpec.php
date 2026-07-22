@@ -10,10 +10,13 @@ use GraphQL\Type\Definition\Type as GraphqlType;
  * One argument-variant of an Eloquent relation field, registered by
  * SelectFields when the enriched tree carries 'argsVariants' (spec §2.2).
  *
- * The variant tree entry is stored VERBATIM (currently `['args' => …,
- * 'fields' => …]` per the Part 1 contract) and handed to
- * getSelectableFieldsAndRelations() untransformed — future-proof against
- * additional keys appearing in the enriched tree.
+ * The variant tree entry (`['args' => …, 'fields' => …]` per the Part 1
+ * contract, any future enriched-tree keys carried along) is MUTABLE state:
+ * handleFields pre-mutates it with child-FK and 'always' markers BEFORE
+ * registration, and register()/observe() deep-merge other positions'
+ * subtrees into it afterwards. The loader reads it only at force time
+ * (spec §2.3), so every merge that lands before the first force is honored
+ * in the SQL.
  */
 final class VariantSpec
 {
@@ -21,7 +24,7 @@ final class VariantSpec
     public bool $consumed = false;
 
     /**
-     * @param array<string,mixed> $entry The verbatim variant entry from the enriched tree
+     * @param array<string,mixed> $entry The variant entry from the enriched tree (pre-mutated with FK/'always' markers; deep-merged further by the registry)
      * @param array<string,mixed> $queryArgs Root query arguments
      */
     public function __construct(

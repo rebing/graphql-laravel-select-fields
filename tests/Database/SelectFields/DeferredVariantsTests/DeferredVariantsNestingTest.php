@@ -280,6 +280,75 @@ class DeferredVariantsNestingTest extends DeferredVariantsTestCase
     }
 
     /**
+     * Spec §2.3, late-wave re-batching: the shared `comments` variant
+     * loaders are FORCED early (branch x's Deferreds are queued during the
+     * sync walk, before y's posts-variant Deferreds), yet branch y's
+     * flag=false posts only reach them afterwards — parents collected
+     * after a prior force must be re-batched on the next force (one
+     * additional base query per late wave, never an undefined-result
+     * read).
+     */
+    public function testLateWaveParentsAreReBatchedAfterFirstForce(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        /** @var Post $flaggedPost */
+        $flaggedPost = Post::factory()->create(['user_id' => $user->id, 'flag' => true]);
+        /** @var Post $unflaggedPost */
+        $unflaggedPost = Post::factory()->create(['user_id' => $user->id, 'flag' => false]);
+
+        $comments = [];
+
+        foreach ([$flaggedPost, $unflaggedPost] as $post) {
+            foreach ([true, false] as $flag) {
+                $comments[$post->id][(int) $flag] =
+                    Comment::factory()->create(['post_id' => $post->id, 'flag' => $flag]);
+            }
+        }
+
+        $this->sqlCounterReset();
+
+        $result = $this->httpGraphql(<<<'GRAPHQL'
+        {
+          x: nestingPosts(flag: true) {
+            id
+            a: comments(flag: true) { id }
+            b: comments(flag: false) { id }
+          }
+          y: nestingUsers {
+            id
+            pa: posts(flag: true) { id a: comments(flag: true) { id } b: comments(flag: false) { id } }
+            pb: posts(flag: false) { id a: comments(flag: true) { id } b: comments(flag: false) { id } }
+          }
+        }
+        GRAPHQL);
+
+        // 1 (x: flagged posts) + 1 (y: users) + 2 (comments a/b wave 1: x's
+        // flagged post only) + 2 (posts pa/pb variants) + 2 (comments a/b
+        // late wave: pb's unflagged post) = 8. pa's flagged post dedupes
+        // against x's (same row) and issues no further comment queries.
+        $this->assertSqlCount(8);
+
+        $x = $result['data']['x'][0];
+        self::assertSame((string) $flaggedPost->id, $x['id']);
+        self::assertSame([(string) $comments[$flaggedPost->id][1]->id], array_column($x['a'], 'id'));
+        self::assertSame([(string) $comments[$flaggedPost->id][0]->id], array_column($x['b'], 'id'));
+
+        $y = $result['data']['y'][0];
+        self::assertSame([(string) $flaggedPost->id], array_column($y['pa'], 'id'));
+        self::assertSame([(string) $comments[$flaggedPost->id][1]->id], array_column($y['pa'][0]['a'], 'id'));
+        self::assertSame([(string) $comments[$flaggedPost->id][0]->id], array_column($y['pa'][0]['b'], 'id'));
+
+        // The late-wave parent: pb's unflagged post hit the already-forced
+        // comment loaders and must still receive ITS OWN rows.
+        self::assertSame([(string) $unflaggedPost->id], array_column($y['pb'], 'id'));
+        self::assertSame([(string) $comments[$unflaggedPost->id][1]->id], array_column($y['pb'][0]['a'], 'id'));
+        self::assertSame([(string) $comments[$unflaggedPost->id][0]->id], array_column($y['pb'][0]['b'], 'id'));
+
+        self::assertTrue($this->app->make(DeferredVariantsRegistry::class)->isEmpty());
+    }
+
+    /**
      * Bullet: "Repeat executions" — running the SAME variant-bearing query
      * twice in one process (two httpGraphql() calls, i.e. two full
      * executions sharing the Octane-style long-lived container) behaves

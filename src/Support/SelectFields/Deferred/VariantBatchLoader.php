@@ -15,30 +15,53 @@ use Illuminate\Database\Eloquent\Model;
  * models are never mutated and no correctness depends on Eloquent's relation
  * cache or on promise sequencing (SyncPromiseAdapter's sequential execution
  * is an optimization fact only, not an invariant we rely on).
+ *
+ * The constraint closure is built LAZILY at the first force via
+ * $constraintsFactory (spec §2.3, force-time constraints): spec-subtree
+ * merges landing after the first resolver hit — later root branches, legacy
+ * observations — must be honored in the SQL. Parents collected after a
+ * prior force are re-batched on the next force (one additional base query
+ * per late wave, never an undefined-result read).
  */
 class VariantBatchLoader
 {
-    /** @var array<string,Model> */
-    private array $parents = [];
+    /** @var array<string,Model> Parents collected but not yet batch-loaded. */
+    private array $pending = [];
+
+    /**
+     * Parents already batch-loaded. Kept for the loader's lifetime so
+     * spl_object_id-based ModelKeys can never be reused (see ModelKey).
+     *
+     * @var array<string,Model>
+     */
+    private array $loaded = [];
 
     /** @var array<string,mixed> */
     private array $results = [];
 
-    private bool $resolved = false;
+    /** Built once, at the first force. */
+    private ?Closure $constraints = null;
 
+    /**
+     * @param Closure():Closure $constraintsFactory Returns the relation
+     *                                              constraint closure; invoked once, at the first force
+     */
     public function __construct(
         private readonly string $relationName,
-        private readonly Closure $constraints,
+        private readonly Closure $constraintsFactory,
     ) {
     }
 
     public function load(Model $parent): Deferred
     {
         $key = ModelKey::for($parent);
-        $this->parents[$key] ??= $parent;
+
+        if (!isset($this->loaded[$key])) {
+            $this->pending[$key] ??= $parent;
+        }
 
         return new Deferred(function () use ($key): mixed {
-            if (!$this->resolved) {
+            if (!\array_key_exists($key, $this->results)) {
                 $this->resolve();
             }
 
@@ -46,18 +69,25 @@ class VariantBatchLoader
         });
     }
 
+    /**
+     * Batch-load the relation for all currently pending parents. Results
+     * accumulate across waves; already-loaded parents are never re-queried.
+     */
     private function resolve(): void
     {
-        $this->resolved = true;
+        $parents = $this->pending;
+        $this->pending = [];
 
-        if ([] === $this->parents) {
+        if ([] === $parents) {
             return;
         }
+
+        $this->constraints ??= ($this->constraintsFactory)();
 
         /** @var array<string,Model> $clones */
         $clones = [];
 
-        foreach ($this->parents as $key => $parent) {
+        foreach ($parents as $key => $parent) {
             $clone = clone $parent;
             $clone->setRelations([]);
             $clones[$key] = $clone;
@@ -68,6 +98,7 @@ class VariantBatchLoader
 
         foreach ($clones as $key => $clone) {
             $this->results[$key] = $clone->getRelation($this->relationName);
+            $this->loaded[$key] = $parents[$key];
         }
     }
 }

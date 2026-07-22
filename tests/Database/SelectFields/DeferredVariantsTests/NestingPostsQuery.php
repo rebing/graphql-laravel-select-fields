@@ -24,6 +24,19 @@ class NestingPostsQuery extends Query
         'name' => 'nestingPosts',
     ];
 
+    public function args(): array
+    {
+        return [
+            // Optional root filter (late-wave re-batching test): lets one
+            // root branch cover only a SUBSET of the posts another branch
+            // reaches through a deferred posts variant, so the shared
+            // comments loaders receive parents AFTER their first force.
+            'flag' => [
+                'type' => Type::boolean(),
+            ],
+        ];
+    }
+
     public function type(): Type
     {
         return Type::nonNull(Type::listOf(Type::nonNull(GraphQL::type('NestingPost'))));
@@ -44,6 +57,9 @@ class NestingPostsQuery extends Query
         return Post::query()
             ->select($selectFields->getSelect())
             ->with($selectFields->getRelations())
+            ->when(isset($args['flag']), static function ($query) use ($args): void {
+                $query->where(\Illuminate\Support\Facades\DB::raw('posts.flag'), '=', $args['flag']);
+            })
             ->orderBy('posts.id')
             ->get();
     }

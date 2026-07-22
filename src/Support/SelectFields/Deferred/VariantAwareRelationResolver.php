@@ -45,21 +45,34 @@ class VariantAwareRelationResolver
             if ($spec) {
                 /** @var VariantBatchLoader $loader */
                 $loader = $this->registry->loaderFor($spec, static function () use ($spec): VariantBatchLoader {
-                    /** @var Closure $constraints */
-                    $constraints = SelectFields::getSelectableFieldsAndRelations(
-                        $spec->queryArgs,
-                        // The verbatim variant entry — getSelectableFieldsAndRelations
-                        // reads only ['args'] (custom-query input) and ['fields']
-                        // (handleFields iteration); passing the entry untransformed
-                        // keeps any future enriched-tree keys intact.
-                        $spec->entry,
-                        $spec->newParentType,
-                        $spec->customQuery,
-                        false,
-                        $spec->ctx,
-                    );
+                    // The constraint closure is built by the loader at its
+                    // FIRST FORCE, not here at loader creation (spec §2.3):
+                    // $spec->entry keeps receiving deep-merges (later root
+                    // branches, legacy observations) after the first
+                    // resolver hit, and under SyncPromiseAdapter no
+                    // Deferred forces until the whole sync walk — all
+                    // registration and observation — has completed.
+                    return new VariantBatchLoader(
+                        $spec->relationName,
+                        static function () use ($spec): Closure {
+                            /** @var Closure $constraints */
+                            $constraints = SelectFields::getSelectableFieldsAndRelations(
+                                $spec->queryArgs,
+                                // getSelectableFieldsAndRelations reads only
+                                // ['args'] (custom-query input) and ['fields']
+                                // (handleFields iteration); passing the whole
+                                // entry keeps any future enriched-tree keys
+                                // intact.
+                                $spec->entry,
+                                $spec->newParentType,
+                                $spec->customQuery,
+                                false,
+                                $spec->ctx,
+                            );
 
-                    return new VariantBatchLoader($spec->relationName, $constraints);
+                            return $constraints;
+                        },
+                    );
                 });
 
                 return $loader->load($root);
@@ -76,5 +89,16 @@ class VariantAwareRelationResolver
     public function inner(): ?callable
     {
         return $this->inner;
+    }
+
+    /**
+     * Identity accessor for the middleware's re-wrap check (spec §2.2,
+     * decorator identity): a decorator persisted in config across a
+     * scoped-instance flush holds the PREVIOUS execution's registry and
+     * must be re-wrapped around the current one.
+     */
+    public function registry(): DeferredVariantsRegistry
+    {
+        return $this->registry;
     }
 }
