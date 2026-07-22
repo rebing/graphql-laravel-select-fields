@@ -36,13 +36,17 @@ final class VariantSpec
     ) {
     }
 
-    /** @return array<string,mixed> */
+    /**
+     * @return array<string,mixed>
+     */
     public function args(): array
     {
         return $this->entry['args'] ?? [];
     }
 
-    /** @return array<string,mixed> */
+    /**
+     * @return array<string,mixed>
+     */
     public function fields(): array
     {
         return $this->entry['fields'] ?? [];

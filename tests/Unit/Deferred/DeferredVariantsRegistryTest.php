@@ -10,9 +10,14 @@ use Rebing\GraphQL\Support\SelectFields\Deferred\DeferredVariantsException;
 use Rebing\GraphQL\Support\SelectFields\Deferred\DeferredVariantsRegistry;
 use Rebing\GraphQL\Support\SelectFields\Deferred\VariantSpec;
 use Rebing\GraphQL\Tests\TestCase;
+use stdClass;
 
 class DeferredVariantsRegistryTest extends TestCase
 {
+    /**
+     * @param array<string,mixed> $args
+     * @param array<string,mixed> $fields
+     */
     private function makeSpec(array $args = ['top' => 3], array $fields = ['id' => true]): VariantSpec
     {
         return new VariantSpec(
@@ -125,10 +130,10 @@ class DeferredVariantsRegistryTest extends TestCase
     {
         config(['graphql.select_fields.strict' => false]);
         Log::shouldReceive('warning')->once()->withArgs(function (string $message, array $context): bool {
-            return str_contains($message, 'unconsumed')
-                && 'Post' === $context['parentType']
-                && 'comments' === $context['field']
-                && ['top' => 3] === $context['args'];
+            return str_contains($message, 'unconsumed') &&
+                'Post' === $context['parentType'] &&
+                'comments' === $context['field'] &&
+                ['top' => 3] === $context['args'];
         });
 
         $registry = new DeferredVariantsRegistry;
@@ -183,9 +188,9 @@ class DeferredVariantsRegistryTest extends TestCase
 
         $calls = 0;
         $make = function () use (&$calls): object {
-            ++$calls;
+            $calls++;
 
-            return new \stdClass;
+            return new stdClass;
         };
 
         $first = $registry->loaderFor($spec, $make);

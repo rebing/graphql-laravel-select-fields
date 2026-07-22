@@ -365,8 +365,6 @@ class DeferredVariantsFallbackTest extends DeferredVariantsTestCase
         $node = $result['data']['fallbackPosts'][0];
         self::assertSame([(string) $commentX->id], array_column($node['a'], 'id'));
         self::assertSame([(string) $commentY->id], array_column($node['b'], 'id'));
-
-        $this->sqlCounterReset();
     }
 
     // -- Interplay (c): 'selectable' => false sibling unaffected -------------

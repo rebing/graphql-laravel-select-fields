@@ -3,7 +3,7 @@
 declare(strict_types = 1);
 namespace Rebing\GraphQL\Tests\Database\SelectFields\DeferredVariantsTests;
 
-use GraphQL\Executor\Promise\Adapter\SyncPromise;
+use GraphQL\Executor\Promise\Adapter\SyncPromiseQueue;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Rebing\GraphQL\Support\SelectFields\Deferred\ModelKey;
 use Rebing\GraphQL\Support\SelectFields\Deferred\VariantBatchLoader;
@@ -44,7 +44,7 @@ class VariantBatchLoaderTest extends TestCaseDatabase
         $this->sqlCounterReset();
 
         $deferreds = $posts->map(fn (Post $post) => $loader->load($post))->all();
-        SyncPromise::runQueue();
+        SyncPromiseQueue::run();
 
         // One base relation query for ALL parents combined:
         $this->assertSqlCount(1);
@@ -54,7 +54,7 @@ class VariantBatchLoaderTest extends TestCaseDatabase
             $deferreds[$i]->then(function ($value) use (&$result): void {
                 $result = $value;
             });
-            SyncPromise::runQueue();
+            SyncPromiseQueue::run();
 
             self::assertCount(2, $result);
             self::assertTrue($result->every(fn (Comment $c): bool => $c->post_id === $post->getKey()));
@@ -86,7 +86,7 @@ class VariantBatchLoaderTest extends TestCaseDatabase
         $loaderB->load($post)->then(function ($value) use (&$resultB): void {
             $resultB = $value;
         });
-        SyncPromise::runQueue();
+        SyncPromiseQueue::run();
 
         self::assertSame([$c1->getKey()], $resultA->modelKeys());
         self::assertSame([$c2->getKey()], $resultB->modelKeys());
@@ -113,7 +113,7 @@ class VariantBatchLoaderTest extends TestCaseDatabase
         });
 
         $this->sqlCounterReset();
-        SyncPromise::runQueue();
+        SyncPromiseQueue::run();
         $this->assertSqlCount(1);
 
         self::assertSame($r1, $r2);

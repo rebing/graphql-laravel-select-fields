@@ -34,7 +34,9 @@ class DeferredVariantsRegistry
         $this->specs[$key] = $spec;
     }
 
-    /** @param array<string,mixed> $args */
+    /**
+     * @param array<string,mixed> $args
+     */
     public function match(string $parentTypeName, string $fieldName, array $args): ?VariantSpec
     {
         $key = $this->key($parentTypeName, $fieldName, ArgsHasher::hash($args));
