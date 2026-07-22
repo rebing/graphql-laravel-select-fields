@@ -64,10 +64,17 @@ jobs:
         php: ${{ fromJSON(needs.matrix.outputs.php) }}
         laravel: ${{ fromJSON(needs.matrix.outputs.laravel) }}
         stability: [prefer-lowest, prefer-stable]
+        # '^10.0' proves 1.0-behavior compat: the DeferredVariants suite
+        # self-skips via DeferredVariantsTestCase (no ArgsHasher on that
+        # line). 'dev-master' is meant to run the full argument-variants
+        # feature suite, but until graphql-laravel merges
+        # feat/604-args-variants into master it also self-skips.
+        # TODO: flip to ^10.1 once released
+        graphql-laravel: ['^10.0', 'dev-master']
         exclude:
           - php: 8.2
             laravel: ^13.0
-    name: P=${{ matrix.php }} L=${{ matrix.laravel }} ${{ matrix.stability }}
+    name: P=${{ matrix.php }} L=${{ matrix.laravel }} GQL=${{ matrix.graphql-laravel }} ${{ matrix.stability }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -91,8 +98,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-${{ matrix.php }}-${{ matrix.stability }}-composer-${{ hashFiles('composer.json') }}
-          restore-keys: ${{ runner.os }}-${{ matrix.php }}-${{ matrix.stability }}-composer-
+          key: ${{ runner.os }}-${{ matrix.php }}-${{ matrix.stability }}-${{ matrix.graphql-laravel }}-composer-${{ hashFiles('composer.json') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.php }}-${{ matrix.stability }}-${{ matrix.graphql-laravel }}-composer-
+
+      - run: composer require "rebing/graphql-laravel:${{ matrix.graphql-laravel }}" --no-update
 
       - run: composer update --prefer-dist --no-progress --${{ matrix.stability }} --with "illuminate/contracts:${{ matrix.laravel }}" --with "laravel/framework:${{ matrix.laravel }}"
 
