@@ -24,6 +24,9 @@
     <testsuite name="Database">
       <directory suffix="Test.php">./tests/Database</directory>
     </testsuite>
+    <testsuite name="Unit">
+      <directory suffix="Test.php">./tests/Unit</directory>
+    </testsuite>
   </testsuites>
   <source ignoreIndirectDeprecations="true">
     <include>
