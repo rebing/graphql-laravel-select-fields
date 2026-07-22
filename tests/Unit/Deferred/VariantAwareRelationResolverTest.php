@@ -86,6 +86,35 @@ class VariantAwareRelationResolverTest extends TestCase
         self::assertInstanceOf(Deferred::class, $result);
     }
 
+    /**
+     * Resolver hardening (Plan-2 Task 7): a POPULATED registry with a spec
+     * that matches (parentType, field, args) exactly must still NOT be
+     * consulted when $root isn't a Model — kills the mutant that drops the
+     * `instanceof Model` guard (which the empty-registry tests above can't
+     * catch, since they never populate the registry at all).
+     */
+    public function testDelegatesForNonModelRootEvenWithPopulatedRegistry(): void
+    {
+        $registry = new DeferredVariantsRegistry;
+        $registry->register(new VariantSpec(
+            'Post',
+            'comments',
+            'comments',
+            ['args' => ['top' => 3], 'fields' => ['id' => ['args' => [], 'fields' => []]]],
+            null,
+            [],
+            null,
+            new ObjectType(['name' => 'Comment', 'fields' => ['id' => Type::int()]]),
+        ));
+
+        $inner = fn (): string => 'inner-called';
+        $resolver = new VariantAwareRelationResolver($inner, $registry);
+
+        $root = ['not' => 'a model'];
+
+        self::assertSame('inner-called', $resolver($root, ['top' => 3], null, $this->makeInfo('Post', 'comments')));
+    }
+
     public function testDelegatesOnRegistryMissWithNonMatchingArgs(): void
     {
         $registry = new DeferredVariantsRegistry;

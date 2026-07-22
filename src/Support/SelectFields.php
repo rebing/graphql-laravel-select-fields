@@ -257,9 +257,21 @@ class SelectFields
                         $argsVariants = $field['argsVariants'] ?? null;
                         $variantsActive = \is_array($argsVariants) &&
                             Deferred\DeferredVariantsConfig::enabled() &&
-                            // Custom resolvers keep the plain 1.0 path
-                            // silently — they already get per-node args.
-                            !Deferred\DeferredVariantsRegistrar::hasCustomResolver($fieldObject->config);
+                            // Privacy-carrying fields are unsupported by
+                            // CONTRACT (spec: privacy contract) regardless of
+                            // the custom-resolver silence below.
+                            // graphql-laravel's Type::getFields() injects a
+                            // 'resolve' closure (the privacy wrapper) for ANY
+                            // field carrying 'privacy' — the field config
+                            // retains BOTH keys, so without this check
+                            // hasCustomResolver() would silence privacy
+                            // fields BEFORE isSupported() (and therefore
+                            // warnUnsupported()) ever sees the 'privacy' key,
+                            // making that check dead code. Checking 'privacy'
+                            // first keeps genuinely-custom resolvers (no
+                            // privacy) silent, as before.
+                            (isset($fieldObject->config['privacy']) ||
+                                !Deferred\DeferredVariantsRegistrar::hasCustomResolver($fieldObject->config));
 
                         if ($variantsActive && Deferred\DeferredVariantsRegistrar::isSupported($fieldObject->config, $relation, $newParentType)) {
                             // Spec §2.2: divert to per-variant deferred
@@ -278,6 +290,21 @@ class SelectFields
                                 static::handleRelation($select, $relation, $parentTable, $variantForFk);
                             }
                             unset($variantForFk);
+
+                            // Symmetric fix (interplay §b): 'always' columns
+                            // must reach EACH variant's own subtree too — the
+                            // addAlwaysFields() call a few lines above this
+                            // branch only mutated the MERGED $field's
+                            // 'fields', which no variant ever reads (each
+                            // variant drives its own independent
+                            // getSelectableFieldsAndRelations() call against
+                            // its OWN 'fields' subtree) — without this loop
+                            // the always-configured column silently never
+                            // makes it into any variant's base-query select.
+                            foreach ($field['argsVariants'] as &$variantForAlways) {
+                                static::addAlwaysFields($fieldObject, $variantForAlways, $parentTable, true);
+                            }
+                            unset($variantForAlways);
 
                             Deferred\DeferredVariantsRegistrar::registerVariants(
                                 $field,
