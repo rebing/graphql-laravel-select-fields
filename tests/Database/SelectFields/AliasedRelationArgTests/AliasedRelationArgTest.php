@@ -52,6 +52,10 @@ class AliasedRelationArgTest extends SelectFieldsTestCase
      */
     public function testAliasedRelationWithDifferentArgs(): void
     {
+        if (class_exists(\Rebing\GraphQL\Support\ArgsVariants\ArgsHasher::class)) {
+            self::markTestSkipped('Fixed behavior is covered by DeferredVariantsTests; this test documents the pre-10.1 buggy behavior for the ^10.0 matrix cell.');
+        }
+
         /** @var User $user */
         $user = User::factory()->create();
 
@@ -133,6 +137,10 @@ GRAQPHQL;
      */
     public function testAliasedRelationAlongsideUnaliased(): void
     {
+        if (class_exists(\Rebing\GraphQL\Support\ArgsVariants\ArgsHasher::class)) {
+            self::markTestSkipped('Fixed behavior is covered by DeferredVariantsTests; this test documents the pre-10.1 buggy behavior for the ^10.0 matrix cell.');
+        }
+
         /** @var User $user */
         $user = User::factory()->create();
 

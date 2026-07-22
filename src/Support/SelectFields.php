@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Arr;
 use Rebing\GraphQL\Support\Contracts\WrapType;
+use Rebing\GraphQL\Support\SelectFields\Deferred;
 
 class SelectFields
 {
@@ -120,6 +121,18 @@ class SelectFields
     protected static function getPrimaryKeyFromParentType(GraphqlType $parentType): ?string
     {
         return isset($parentType->config['model']) ? app($parentType->config['model'])->getKeyName() : null;
+    }
+
+    /**
+     * Best-effort type name for deferred-variants diagnostics (VariantSpec's
+     * parentTypeName, log/exception context). The base GraphqlType has no
+     * statically declared 'name' — only NamedType implementors (ObjectType,
+     * InterfaceType, ...) do — but this call site is only ever reached for
+     * model-backed concrete types, which always implement it.
+     */
+    private static function getTypeNameForDiagnostics(GraphqlType $parentType): string
+    {
+        return $parentType instanceof \GraphQL\Type\Definition\NamedType ? $parentType->name() : $parentType::class;
     }
 
     /**
@@ -241,14 +254,59 @@ class SelectFields
 
                         static::addAlwaysFields($fieldObject, $field, $parentTable, true);
 
-                        $with[$relationsKey] = static::getSelectableFieldsAndRelations(
-                            $queryArgs,
-                            $field,
-                            $newParentType,
-                            $customQuery,
-                            false,
-                            $ctx,
-                        );
+                        $argsVariants = $field['argsVariants'] ?? null;
+                        $variantsActive = \is_array($argsVariants) &&
+                            Deferred\DeferredVariantsConfig::enabled() &&
+                            // Custom resolvers keep the plain 1.0 path
+                            // silently — they already get per-node args.
+                            !Deferred\DeferredVariantsRegistrar::hasCustomResolver($fieldObject->config);
+
+                        if ($variantsActive && Deferred\DeferredVariantsRegistrar::isSupported($fieldObject->config, $relation, $newParentType)) {
+                            // Spec §2.2: divert to per-variant deferred
+                            // loading — no $with entry; parent FK columns
+                            // were already added by handleRelation() above,
+                            // but that call only mutated the MERGED $field's
+                            // 'fields' subtree. For HasMany/MorphMany/HasOne/
+                            // MorphOne relations the child FK lives in the
+                            // relation's OWN select (built from 'fields'),
+                            // and each variant drives its own independent
+                            // base query — so repeat the same mutation on
+                            // every variant's subtree too, or the loader's
+                            // clone-and-match-by-FK step silently drops
+                            // every row.
+                            foreach ($field['argsVariants'] as &$variantForFk) {
+                                static::handleRelation($select, $relation, $parentTable, $variantForFk);
+                            }
+                            unset($variantForFk);
+
+                            Deferred\DeferredVariantsRegistrar::registerVariants(
+                                $field,
+                                self::getTypeNameForDiagnostics($parentType),
+                                $key,
+                                $relationsKey,
+                                $customQuery,
+                                $queryArgs,
+                                $ctx,
+                                $newParentType,
+                            );
+                        } else {
+                            if ($variantsActive) {
+                                // Spec §2.1a: unsupported variant → warn and
+                                // take the legacy merged path (bit-for-bit
+                                // today's behavior). A registry miss is never
+                                // a fallback path.
+                                Deferred\DeferredVariantsRegistrar::warnUnsupported(self::getTypeNameForDiagnostics($parentType), $key, $field);
+                            }
+
+                            $with[$relationsKey] = static::getSelectableFieldsAndRelations(
+                                $queryArgs,
+                                $field,
+                                $newParentType,
+                                $customQuery,
+                                false,
+                                $ctx,
+                            );
+                        }
                     } elseif (is_a($parentTypeUnwrapped, GraphqlInterfaceType::class)) {
                         static::handleInterfaceFields(
                             $queryArgs,
