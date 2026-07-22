@@ -16,6 +16,23 @@ use Rebing\GraphQL\Tests\TestCase;
 class VariantAwareRelationResolverTest extends TestCase
 {
     /**
+     * `testReturnsDeferredOnRegistryHit` constructs a `GraphQL\Deferred`,
+     * whose executor is enqueued into webonyx's process-wide static
+     * `SyncPromiseQueue` and never drained (this test class is DB-less, so
+     * running it would fire a real Eloquent query). Discard — never
+     * execute — anything left over so it doesn't leak into later tests
+     * running in the same PHPUnit process, especially under random order.
+     */
+    protected function tearDown(): void
+    {
+        while (!\GraphQL\Executor\Promise\Adapter\SyncPromiseQueue::isEmpty()) {
+            \GraphQL\Executor\Promise\Adapter\SyncPromiseQueue::queue()->dequeue();
+        }
+
+        parent::tearDown();
+    }
+
+    /**
      * Minimal ResolveInfo stand-in: the resolver only reads parentType->name
      * and fieldName. Build a real ResolveInfo via reflection-free mock.
      */

@@ -107,9 +107,30 @@ class MiddlewareWiringTest extends TestCaseDatabase
 
     public function testRegistryIsFlushedAfterExecution(): void
     {
+        // The fixture query registers no specs, so the registry is empty
+        // both before AND after execution regardless of whether flush() is
+        // actually called — asserting isEmpty() alone doesn't pin the
+        // middleware's flush() call. Bind a spy in its place (Laravel's
+        // Pipeline resolves the middleware — and therefore its constructor
+        // dependencies — fresh from the container on every execution, so
+        // this instance is the one the middleware receives) and assert
+        // flush() was invoked with `true` for this successful execution.
+        $spy = new class extends DeferredVariantsRegistry {
+            /** @var list<bool> */
+            public array $flushCalls = [];
+
+            public function flush(bool $successful): void
+            {
+                $this->flushCalls[] = $successful;
+                parent::flush($successful);
+            }
+        };
+        $this->app->instance(DeferredVariantsRegistry::class, $spy);
+
         $this->httpGraphql('{ postsListOfWithSelectFieldsAndModel { id } }');
 
-        self::assertTrue($this->app->make(DeferredVariantsRegistry::class)->isEmpty());
+        self::assertSame([true], $spy->flushCalls);
+        self::assertTrue($spy->isEmpty());
     }
 
     public function testPerSchemaMiddlewareListAlsoGetsAppended(): void
