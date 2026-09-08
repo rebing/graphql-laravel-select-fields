@@ -551,6 +551,87 @@ relations into the eager-load set.
 **Note:** For union types, SelectFields cannot determine the concrete type at
 query-build time, so it uses `SELECT *` instead of selecting specific columns.
 
+## Argument variants (aliased relations with different arguments)
+
+**Requires `rebing/graphql-laravel` >= 10.1.** On `rebing/graphql-laravel ^10.0`
+this feature is inert: the field-tree it emits never carries the enriched
+`argsVariants` data this section describes, so SelectFields silently uses the
+same single-merged-eager-load behavior it always has - no error, no warning,
+no code change required.
+
+Previously, requesting the same Eloquent relation more than once with
+different arguments - via GraphQL aliases, or via divergent branches under
+inline fragments - resolved it only **once**: every alias/branch silently
+received the same (last-processed) argument set
+([rebing/graphql-laravel#604](https://github.com/rebing/graphql-laravel/issues/604)).
+
+```graphql
+{
+  users {
+    id
+    flaggedPosts: posts(flag: true) { id }
+    unflaggedPosts: posts(flag: false) { id }
+  }
+}
+```
+
+With `rebing/graphql-laravel >= 10.1`, each distinct argument set for
+`posts` is now detected and resolved independently: `flaggedPosts` and
+`unflaggedPosts` each run their own constrained, still-batched query (one
+extra query per distinct variant, not per parent row - N+1-safe).
+
+### Configuration
+
+| Config key | Type | Default | Purpose |
+|---|---|---|---|
+| `graphql.select_fields.deferred_variants` | `bool` | `true` | Master switch for this feature. Set to `false` to always use the pre-1.1 legacy merged-load behavior (last-variant-wins), even against a `>= 10.1` host. |
+| `graphql.select_fields.strict` | `bool` | `false` in normal application use (falls back to `app()->runningUnitTests()` when unset, so it is `true` automatically inside your own PHPUnit run unless you override it) | When `true`, any of the unsupported cases below throws a `DeferredVariantsException` instead of logging a warning and silently falling back. |
+
+```php
+// config/graphql.php
+'select_fields' => [
+    'deferred_variants' => false, // disable entirely
+    'strict' => true,             // throw instead of warn-and-fallback
+],
+```
+
+### Unsupported cases (legacy fallback + warning)
+
+The following relation shapes cannot be safely diverted to per-variant
+deferred loading. For these, SelectFields keeps the pre-1.1 legacy merged
+eager load (last-variant-wins), logs a `SelectFields: argument variants on an
+unsupported relation - falling back to legacy merged eager load` warning, and
+- when `graphql.select_fields.strict` is `true` - throws a
+`DeferredVariantsException` instead:
+
+- **Paginated/wrapped relation targets** - any relation whose type implements
+  `WrapType` (including this package's own pagination types).
+- **`MorphTo` relations** - the loader cannot batch a polymorphic "any model"
+  target.
+- **Relation fields carrying a `privacy` config** - per-row denial outcomes
+  are unobservable from this package; per-variant privacy support requires a
+  future graphql-laravel hook. The privacy contract always **wins** over the
+  custom-resolver exemption below: a privacy-carrying field with divergent
+  argument variants warns (and throws in strict mode) even when the field
+  also supplies its own `resolve` callback - privacy-denial correctness takes
+  priority over resolver-silence.
+- **Relation fields reached through interface/union parent contexts** - these
+  never reach the model-relation branch that emits variants, so they stay on
+  the legacy path implicitly.
+
+Two further cases stay on the legacy path silently instead - **no** warning,
+**no** strict-mode exception - because the field's own resolver already
+receives correct per-alias arguments from the executor:
+
+- Fields with an explicit `resolve` callback (and no `privacy`).
+- **Relation fields configured with `alias`**: graphql-laravel injects an
+  alias-resolving closure for any field carrying an `alias` string
+  (`Type::getFieldResolver()`), so from this package's point of view an
+  aliased relation is indistinguishable from a genuine custom resolver.
+  Aliased relations therefore keep the pre-1.1 behavior - #604 stays
+  **unfixed** for them - even on `rebing/graphql-laravel >= 10.1`. This is a
+  currently-documented limitation.
+
 ## API Reference
 
 ### `SelectFields`
@@ -593,8 +674,13 @@ Field::registerParameterInjector(new SelectFieldsParameterInjector());
 
 ## Known Limitations
 
-- Resolving fields via aliases will only resolve them once, even if the fields
-  have different arguments
+- Resolving relation fields via aliases with different arguments is now
+  supported by default (requires `rebing/graphql-laravel >= 10.1`) - see
+  [Argument variants](#argument-variants-aliased-relations-with-different-arguments)
+  above. The exceptions listed there (paginated/wrapped targets, `MorphTo`
+  relations, privacy-carrying fields, interface/union parent contexts, and
+  relations configured with their own `alias`) still resolve once, with the
+  last-processed argument set silently winning
   ([Issue](https://github.com/rebing/graphql-laravel/issues/604)).
 
 ## License
