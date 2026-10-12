@@ -55,8 +55,7 @@ class AliasedRelationArgTest extends SelectFieldsTestCase
         /** @var User $user */
         $user = User::factory()->create();
 
-        /** @var Post $flaggedPost */
-        $flaggedPost = Post::factory()->create([
+        Post::factory()->create([
             'flag' => true,
             'user_id' => $user->id,
         ]);
@@ -142,8 +141,7 @@ GRAQPHQL;
             'user_id' => $user->id,
         ]);
 
-        /** @var Post $unflaggedPost */
-        $unflaggedPost = Post::factory()->create([
+        Post::factory()->create([
             'flag' => false,
             'user_id' => $user->id,
         ]);
