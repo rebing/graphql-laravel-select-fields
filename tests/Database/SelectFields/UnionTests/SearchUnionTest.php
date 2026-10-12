@@ -42,8 +42,7 @@ class SearchUnionTest extends SelectFieldsTestCase
         $post = Post::factory()->create();
         /** @var Comment $comment1 */
         $comment1 = Comment::factory()->create(['post_id' => $post->id, 'title' => 'lorem']);
-        /** @var Comment $comment2 */
-        $comment2 = Comment::factory()->create(['post_id' => $post->id, 'title' => 'ipsum']);
+        Comment::factory()->create(['post_id' => $post->id, 'title' => 'ipsum']);
 
         $query = <<<'GRAQPHQL'
 query ($id: String!) {
