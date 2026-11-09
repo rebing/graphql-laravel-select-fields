@@ -397,7 +397,7 @@ class SelectFields
         ?string $parentTable,
         bool $forRelation = false,
     ): void {
-        if (isset($fieldObject->config['always'])) { // @phpstan-ignore isset.offset ('always' is a Rebing extension to webonyx's FieldDefinition config)
+        if (isset($fieldObject->config['always'])) {
             $always = $fieldObject->config['always'];
 
             if (\is_string($always)) {
@@ -469,7 +469,7 @@ class SelectFields
                         }
 
                         /* @var Relation $query */
-                        return app($type->config['model'])->getTable() === $query->getParent()->getTable(); // @phpstan-ignore offsetAccess.notFound ('model' is a Rebing extension to webonyx's ObjectType config)
+                        return app($type->config['model'])->getTable() === $query->getParent()->getTable();
                     },
                 );
                 $typesFiltered = array_values($typesFiltered);
@@ -574,7 +574,7 @@ class SelectFields
                     $relationField = $type->getField($key);
                     $newParentType = $relationField->getType();
                     // 'query' is a Rebing extension to webonyx's FieldDefinitionConfig
-                    $customQuery = $relationField->config['query'] ?? $customQuery; // @phpstan-ignore nullCoalesce.offset
+                    $customQuery = $relationField->config['query'] ?? $customQuery;
                 } catch (InvariantViolation) {
                     // Field not found on this type, keep defaults
                 }
